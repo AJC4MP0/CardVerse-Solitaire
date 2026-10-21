@@ -8,7 +8,7 @@ const app = express();
 const PORT = 1234;
 
 //Tells express that any files placed in the folder can be accessed by the browser
-app.use(express.static('CardVerse-Solitaire'));
+app.use(express.static('Client'));
 
 //HTTP .get route for the root URL
 app.get('/', (req, res) => {
