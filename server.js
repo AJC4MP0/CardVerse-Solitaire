@@ -21,4 +21,5 @@ app.listen(PORT, () => {
     console.log('Server is running at port 1234')
 });
 
-//open http://localhost:1234 and 'Ctrl + C' in terminal to stop
+// in terminal do 'node server.js'
+// open http://localhost:1234 and 'Ctrl + C' in terminal to stop
