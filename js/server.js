@@ -29,11 +29,12 @@ db.connect((err) => {
     console.log('Successfully connected to the MySQL database!');
 });
 
-//HTTP .get route for the root URL
+// HTTP .get route for the root URL
 app.get('/', (req, res) => {
     //sends text to browser
     res.send('Server is running');
 });
+
 
 //starts server on port and prints message to the terminal when ready
 app.listen(PORT, () => {
