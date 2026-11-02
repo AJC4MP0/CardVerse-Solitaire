@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name ="viewport" content="width=device-width, inital-scale=1.0">
+    <title>CardVerse: Solitaire - Create Acccount</title>
+
+    <!-- Google Font: Oswald -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
+
+    
+    <!-- Connects css file to style page elements -->
+    <link rel="stylesheet" href="css/style.css">
+    <!--Everything above comes rom index.html-->
+</head> 
+
+<body>
+
+    <!-- Top Left Title/Button -->
+    <div class="top-left-slogan">
+        <a href="index.html" style="color:white; text-decoration: none;">
+            <p style="font-size: 24px; font-weight: 600; letter-spacing: 1px;">CardVerse: Solitaire</p>
+        </a>
+    </div>
+
+    <!-- Center Form Container -->
+    <main class = "auth-card-container">
+        <!-- Card Header -->
+         <h2 class="auth-card-title">Create Account</h2>
+         <div class="card-divider"></div>
+
+        <!-- HTML Form submitting data via POST to the backend   -->
+        <!-- POST, tells the browser to package the user's input and send it inside the body of the HTTP request, 
+        rather than appending it to the website address          -->
+        <form action="/api/signup" method="POST" class="auth-form">
+
+            <div class ="input-group">
+                <label for = "username">Username</label>
+                <!-- autocomplete="off" tells the browser not to save or suggest previous text entries for this field 
+                Input is a void element -->
+                <input type="text" id="username" name="username" required autocomplete="off">
+            </div>
+
+                        <div class ="input-group">
+                <label for = "email">Email Address</label>
+                <input type="email" id="email" name="email" required autocomplete="off">
+            </div>
+
+
+            <!--Browser automatically overrides text when type="password"-->
+            <div class = "input-group">
+                <label for ="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="play-btn form-submit-btn">Register</button>
+        </form>
+
+        <div class="card-divider"></div>
+    </main>
+        
+</body>
+</html>

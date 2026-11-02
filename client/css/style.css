@@ -7,10 +7,17 @@
 
 /* Styles the landing page background, text color, Oswald font, centers content*/
 body {
-    background-color: #172e46;
-    background-image: radial-gradient(circle at center, #122a43 0%, #172e46 100%);
+    background-image: url('../images/spacecards.png');
+    background-size: cover;
+    background-position: center;
+    /* prevents background from repeating */
+    background-repeat: no-repeat;
+    /*background while image loads*/
+    background-color: #0077b6;
+    /*Global text color and font*/
     color: white;
     font-family: 'Oswald', sans-serif;
+    /*Layout Settings*/
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -18,6 +25,8 @@ body {
     overflow: hidden;
     position: relative;
 }
+
+/*------------------------ LANDING PAGE ------------------------*/
 
 /* ----------------------------------
  Top Left Slogan 1
@@ -131,4 +140,103 @@ PLAY NOW BUTTON
     transform: translateY(-2px);
     box-shadow: 0 6px 25px rgba(0, 180, 216, 0.6);
     background: linear-gradient(135deg, #0096c7, #48cae4);
+}
+
+/*------------------------ SIGN UP/ ACCOUNT CREATION ------------------------*/
+
+.auth-card-container{
+    background: rgba(13, 27, 42, 0.75);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 30px 40px;
+    width: 380px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    backdrop-filter: blur(8px);                  /*smooth glass effect over space background*/   
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); /*Shadow*/
+}
+
+.auth-card-title {
+    font-size: 26px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+/* line divider */
+.card-divider{
+    width: 100%;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.3);
+    margin: 15px 0 20px 0;
+}
+
+/*form element wrapper*/
+.auth-form{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* input group that wraps label + input */
+.input-group{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+/*field label text above each input*/
+.input-group label{
+    font-size: 16px;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    text-transform: uppercase;
+}
+
+/* text inputs*/
+.input-group input{
+    width: 100%;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color:white;
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    text-align: center;
+    outline: none;
+    transition: all 0.2 ease-in-out;
+}
+
+/*glow effect when user clicks into an input field*/
+.input-group input:focus{
+    border-color: #00b4d8;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 10px rgba(0, 180, 216, 0.4);
+}
+
+/*submit register button inside the box*/
+.form-submit-btn{
+    width: 100%;
+    margin-top: 10px;
+    cursor: pointer;
+    padding: 10px 20px;
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    text-transform: uppercase;
+    border-radius: 20px;
+    transition: background-color 0.2s ease, color 0.2s ease
+}
+
+.form-submit-btn:hover {
+    background-color: white;
+    color: #0d1b2a;
 }
