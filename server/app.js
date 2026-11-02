@@ -8,6 +8,11 @@ const app = express();
 //port number
 const PORT = 1234;
 
+//Middleware to parse incoming data from HTML forms
+// URL encoded intercepts incoming raw text, parses and decodes, then wraps them into a js object attached to req.body
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
+
 //tells express that any file in the client folder can be accessed by the browser
 app.use(express.static('client'));
 //mounts router module onto app
