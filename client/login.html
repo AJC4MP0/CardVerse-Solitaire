@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- LOGIN PAGE -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name ="viewport" content="width=device-width, inital-scale=1.0">
+    <title>CardVerse: Solitaire - Login</title>
+
+    <!-- Google Font: Oswald -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
+
+    
+    <!-- Connects css file to style page elements -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+        <!-- Top Left Title/Button -->
+    <div class="top-left-slogan">
+        <a href="index.html" style="color:white; text-decoration: none;">
+            <p style="font-size: 24px; font-weight: 600; letter-spacing: 1px;">CardVerse: Solitaire</p>
+        </a>
+    </div>
+    
+    <!-- Center card container-->
+    <div class = "auth-card-container">
+        <form action="/api/login" method="POST" class="auth-form">
+            <!-- Center card title-->
+            <h2 class="auth-card-title">Login to an Account</h2>
+                <!-- Enter Username/Email -->
+                <div class="input-group">
+                    <label for = "username">Username or Email</label>
+                    <input type = "text" id="username" name="username" required>
+                </div>
+
+                <!-- Enter Password -->
+                <div class="input-group">
+                    <label for = "password">Password</label>
+                    <input type = "password" id="password" name="password" required>
+                </div>
+
+                <!-- Submit button -->
+                <button type = "submit" class = "play-btn form-submit-btn">Log In</button>
+        </form>
+
+        <p>
+            Don't have an account? <a href="signup.html">Sign up here</a>
+        </p>
+
+    </div>
+</body>
+</html>

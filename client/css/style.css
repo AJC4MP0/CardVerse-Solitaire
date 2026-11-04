@@ -7,7 +7,7 @@
 
 /* Styles the landing page background, text color, Oswald font, centers content*/
 body {
-    background-image: url('../images/spacecards.png');
+    background-image: url('../images/spacebg.png');
     background-size: cover;
     background-position: center;
     /* prevents background from repeating */
@@ -101,7 +101,7 @@ MAIN CENTER CONTENT
 .title-divider {
     width: 200px;         
     height: 2px;          
-    background-color: #415a77; 
+    background-color: white; 
     margin: 10px auto;    
 }
 
