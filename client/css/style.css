@@ -7,7 +7,7 @@
 
 /* Styles the landing page background, text color, Oswald font, centers content*/
 body {
-    background-image: url('../images/spacebg.png');
+    background-image: url('../images/spacebackground.png');
     background-size: cover;
     background-position: center;
     /* prevents background from repeating */
