@@ -37,7 +37,7 @@ router.post('/api/signup', async (req, res) => {
     }
 });
 
-//Handles lolgin form submission, email or password
+//Handles login form submission, email or password
 router.post('/api/login', async (req, res) => {
     const {username: userInput, password} = req.body;
 
