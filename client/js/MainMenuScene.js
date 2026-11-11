@@ -1,21 +1,33 @@
-export default class MainMenuScene extends Phaser.Scene {
+class MainMenuScene extends Phaser.Scene {
     constructor() {
         super ({ key: 'MainMenuScene' });
     }
 
     //preloads images or audio
-    preload() {
-        
-    }
+    preload() {}
 
     create() {
+
+        /* ----- TEST CODE ------ */
+          const myDeck = new Deck();
+          myDeck.shuffle();
+          
+          const testPile = new Pile('layout');
+          const dealtCard = myDeck.dealCard();
+          dealtCard.flip();
+
+          testPile.addCard(dealtCard);
+          console.log('Top card of test pile:', testPile.topCard());
+
+        /*----------------------- */
+
         const { width, height} = this.scale;
         //background
         this.add.rectangle( 0, 0, width, height, 0x1a1a2e).setOrigin(0);
 
         //Game title
         this.add.text(width / 2, height * 0.25, 'CARDVERSE SOLITAIRE',{
-            fontFamily: 'Arial',
+            fontFamily: 'Oswald, sans-serif',
             fontSize: '42px',
             fontStyle: 'bold',
             color: '#ffffff'
