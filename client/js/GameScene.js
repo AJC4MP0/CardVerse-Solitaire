@@ -55,6 +55,54 @@ class GameScene extends Phaser.Scene {
         //renders cards on screen
         this.renderLayout(layoutStartX, startY, layoutSpacing);
 
+        // ------------- DRAG HANDLER -------------
+        this.input.on('dragstart', (pointer, gameObject) => {
+            //Bring dragged card to very top layer so it floats above the others
+            this.children.bringToTop(gameObject);
+            gameObject.alpha = 0.85; // adds transparency when dragging
+        });
+
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+            //Move the container smoothly with the cursor
+            gameObject.x = dragX;
+            gameObject.y = dragY;
+        });
+
+        this.input.on('dragend', (pointer, gameObject, dropped) => {
+            gameObject.alpha = 1.0
+            
+            //When dropped without valid drop zone, goes back to home
+            if(!dropped) {
+                gameObject.x = gameObject.originalX;
+                gameObject.y = gameObject.originalY;
+            }
+        });
+
+        // ------------- DROP HANDLER -------------
+        this.input.on('drop', (pointer, gameObject, dropZone) => {
+            const draggedCard = gameObject.cardData;
+            const targetPile = dropZone.pileReference;
+
+            //Check if move is valid: different pile AND valid move
+            if(gameObject.sourcePile !== targetPile && this.isValidLayoutMove(draggedCard, targetPile)) {
+                console.log(`Valid move: Dropped ${draggedCard.value} of ${draggedCard.suit}`);
+
+            //remove card from source pile and add to target pile
+                gameObject.sourcePile.removeCard(draggedCard);
+                targetPile.addCard(draggedCard);
+
+            //Update container original position to new spot
+                const newCardIndex = targetPile.cards.length - 1;
+                gameObject.originalX = dropZone.x;
+                gameObject.originalY = 220 + (newCardIndex * 30); //220 is the start y
+
+                gameObject.x = gameObject.originalX;
+                gameObject.y = gameObject.originalY;
+
+            // update source reference
+                gameObject.sourcePile = targetPile;
+            }
+        });
     } // create 
 
     renderLayout(startX, startY, spacing) {
@@ -66,28 +114,63 @@ class GameScene extends Phaser.Scene {
         this.layoutPiles.forEach((pile, colIndex) => {
             const x = startX + (colIndex * spacing);
 
-            this.add.rectangle(x, startY, cardWidth, cardHeight)
-            .setStrokeStyle(1, 0xffffff, 0.3)
-            .setOrigin(0.5);
+            //Active drop zone
+            const zoneHeight = cardHeight + (Math.max(0, pile.cards.length - 1) * verticalOffset);
+            const dropZone = this.add.zone(x, startY + (zoneHeight / 2) - (cardHeight / 2), cardWidth, zoneHeight)
+                .setRectangleDropZone(cardWidth, zoneHeight)
+                .setOrigin(0.5);
+            
+            //Pile reference to the drop zone
+            dropZone.pileReference = pile;
+            
+            //Draw empty layout slot outline
+            this.add.rectangle(x, startY, cardWidth, cardHeight, 0xffffff)
+                .setStrokeStyle(1, 0x333333, 0.3)
+                .setOrigin(0.5);
 
             pile.cards.forEach((card, cardIndex) => {
                 const y = startY + (cardIndex * verticalOffset);
 
+                //empty layout slot outline
                 const cardBgColor = card.faceUp ? 0xffffff : 0xd9534f;
                 this.add.rectangle(x, y, cardWidth, cardHeight, cardBgColor)
                     .setStrokeStyle(1, 0x000000)
                     .setOrigin(0.5);
 
                 if(card.faceUp) {
-                    //red cards
-                    const textColor = (card.suit == 'hearts' || card.suit == 'diamonds') ? '#cd4945' :'#000000';
-                    this.add.text(x, y, `${card.value}\n${this.getSuitSymbol(card.suit)}`, {
-                        fontFamily: 'Oswald, sans-serif',
+                // container for face up card
+                    const cardBg = this.add.rectangle(0, 0, cardWidth, cardHeight, 0xffffff)
+                        .setStrokeStyle(1, 0x333333)
+                        .setOrigin(0.5);
+                    
+                //Changes colors: If hearts or diamonds, the card will be red, vice versa
+                    const textColor = (card.suit === 'hearts' || card.suit === 'diamonds') ? '#cd4945' : '#000000';
+                    // Creates the card: Card value (upper line), suit (lower line)
+                    const cardText = this.add.text(0, 0, `${card.value}\n${this.getSuitSymbol(card.suit)}`, {
+                        fontFamily: 'Oswald, Arial, sans-serif',
                         fontSize: '14px',
                         fontStyle: 'bold',
                         color: textColor,
                         align: 'center'
                     }).setOrigin(0.5);
+                    
+                //Card container
+                    const cardContainer = this.add.container(x, y, [cardBg, cardText])
+                        .setSize(cardWidth, cardHeight)
+                        .setInteractive({ useHandCursor: true});
+                    
+                // references for what card/pile the card belongs to
+                    cardContainer.cardData = card;
+                    cardContainer.sourcePile = pile;
+                    cardContainer.originalX = x;
+                    cardContainer.originalY = y;
+
+                //Phaser drag input
+                    this.input.setDraggable(cardContainer);
+                } else {
+                    this.add.rectangle(x , y, cardWidth, cardHeight, 0xcd4945)
+                    .setStrokeStyle(1, 0x333333)
+                    .setOrigin(0.5);
                 }
             });
         });
@@ -102,5 +185,29 @@ class GameScene extends Phaser.Scene {
             case 'spades': return '♠';
             default: return '';
         }
+    }
+
+    isValidLayoutMove(card, targetPile) {
+        //Rule 1: empty column only uses King
+        if (targetPile.cards.length === 0) { // three '=' means that cards.length has to be 0, same type and value  
+            return card.value === 'K';       // if two '=' any card can be placed
+        }
+
+        const topCard = targetPile.topCard();
+
+        //Rule 2: Must be descending rank from the previous card
+        const rankValues = {'A': 1,   '2': 2,   '3': 3,   '4': 4, 
+                            '5': 5,   '6': 6,   '7': 7,   '8': 8, '9': 9, 
+                            '10': 10, 'J': 11,  'Q': 12,  'K': 13};
+        const cardRank = rankValues[card.value];
+        const topRank = rankValues[topCard.value];
+        const isDescending = cardRank === topRank - 1;
+
+        //Rule 3: Must be alternating colors
+        const isCardRed = (card.suit === 'hearts' || card.suit === 'diamonds');
+        const isTopRed =  (topCard.suit === 'hearts' || topCard.suit === 'diamonds');
+        const isAlternatingColor = isCardRed !== isTopRed;
+
+        return isDescending && isAlternatingColor;
     }
 } //class
