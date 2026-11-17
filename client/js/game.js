@@ -1,18 +1,3 @@
-//Game Scene
-class GameScene extends Phaser.Scene {
-    constructor() {
-        super({ key: 'GameScene' });
-    }
-
-    create() {
-        const { width, height } = this.scale;
-        this.add.text(width / 2, height / 2, 'Main Game Screen Active!', {
-            fontSize: '28px',
-            color: '#00ffcc'
-        }).setOrigin(0.5);
-    }
-}
-
 //Game Configuration & Initialization
 const config = {
     type: Phaser.AUTO,
