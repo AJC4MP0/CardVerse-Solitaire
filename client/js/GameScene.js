@@ -52,6 +52,29 @@ class GameScene extends Phaser.Scene {
             this.layoutPiles.push(pile);
         }
 
+        //Create 4 foundation piles
+        this.foundationPiles = [];
+        const foundStartX = 405;
+        const foundStartY = 100;
+        const foundSpacing = 75;
+
+        for(let i = 0; i < 4; i++) {
+            const pile = new Pile('foundation');
+            const x = foundStartX + (i * foundSpacing);
+
+            // drop zone for foundation slot
+            const dropZone = this.add.zone(x, foundStartY, 65, 95)
+                .setRectangleDropZone(65, 95)
+                .setOrigin(0.5);
+
+            dropZone.pileReference = pile;
+            dropZone.isFoundation = true;
+
+            this.foundationPiles.push(pile);
+        }
+
+        this.refreshBoard();
+
         //renders cards on screen
         this.renderLayout(layoutStartX, startY, layoutSpacing);
 
@@ -83,24 +106,38 @@ class GameScene extends Phaser.Scene {
             const draggedCard = gameObject.cardData;
             const targetPile = dropZone.pileReference;
 
-            //Check if move is valid: different pile AND valid move
-            if(gameObject.sourcePile !== targetPile && this.isValidLayoutMove(draggedCard, targetPile)) {
+            let isValid = false;
+
+            if (dropZone.isFoundation){
+                //check foundation rules (ascending suit)
+                isValid = this.isValidFoundationMove(draggedCard, targetPile);
+            } else {
+                //check layout rules (different pile, alt colors, descending rank)
+                isValid = (gameObject.sourcePile !== targetPile && this.isValidLayoutMove(draggedCard, targetPile));
+            }
+
+            if (isValid) {
                 console.log(`Valid move: Dropped ${draggedCard.value} of ${draggedCard.suit}`);
 
-            //remove card from source pile and add to target pile
+                 //remove card from source pile
                 gameObject.sourcePile.removeCard(draggedCard);
+                
+                //If source was a layout pile, auto flip the new top card face-up
+                if (gameObject.sourcePile.type === 'layout' && gameObject.sourcePile.cards.length > 0) {
+                    const newTopCard = gameObject.sourcePile.cards[gameObject.sourcePile.cards.length - 1];
+                    if(!newTopCard.faceUp) {
+                        newTopCard.flip();
+                    }
+                }
+                //add card to target pile
                 targetPile.addCard(draggedCard);
 
-            //Update container original position to new spot
-                const newCardIndex = targetPile.cards.length - 1;
-                gameObject.originalX = dropZone.x;
-                gameObject.originalY = 220 + (newCardIndex * 30); //220 is the start y
-
+                //clear old visuals and re render board with updated version
+                this.refreshBoard();
+            } else {
+                //invalid move
                 gameObject.x = gameObject.originalX;
                 gameObject.y = gameObject.originalY;
-
-            // update source reference
-                gameObject.sourcePile = targetPile;
             }
         });
     } // create 
@@ -177,6 +214,56 @@ class GameScene extends Phaser.Scene {
 
     } // render method
 
+    refreshBoard() {
+        // Clear out existing dynamic card/slot game objects
+        this.children.list
+            .filter(child => child.type === 'Container' || child.type === 'Rectangle' || child.type === 'Text' || child.type === 'Zone')
+            .forEach(child => child.destroy());
+
+        // Re-render layout columns and drop zones
+        this.renderLayout(180, 220, 75);
+
+        // Re-render foundation piles
+        const foundStartX = 405;
+        const foundStartY = 100;
+        const foundSpacing = 75;
+
+        this.foundationPiles.forEach((pile, i) => {
+            const x = foundStartX + (i * foundSpacing);
+
+            // 1. Drop zone for foundation slot
+            const dropZone = this.add.zone(x, foundStartY, 65, 95)
+                .setRectangleDropZone(65, 95)
+                .setOrigin(0.5);
+
+            dropZone.pileReference = pile;
+            dropZone.isFoundation = true;
+
+            // 2. Draw placeholder outline for foundation slot
+            this.add.rectangle(x, foundStartY, 65, 95)
+                .setStrokeStyle(1, 0xffffff, 0.4)
+                .setOrigin(0.5);
+
+            // 3. Draw top card of foundation if any exist
+            if (pile.cards.length > 0) {
+                const topCard = pile.cards[pile.cards.length - 1];
+                
+                this.add.rectangle(x, foundStartY, 65, 95, 0xffffff)
+                    .setStrokeStyle(1, 0x333333)
+                    .setOrigin(0.5);
+                
+                const textColor = (topCard.suit === 'hearts' || topCard.suit === 'diamonds') ? '#cd4945' : '#000000';
+                this.add.text(x, foundStartY, `${topCard.value}\n${this.getSuitSymbol(topCard.suit)}`, {
+                    fontFamily: 'Oswald, Arial, sans-serif',
+                    fontSize: '14px',
+                    fontStyle: 'bold',
+                    color: textColor,
+                    align: 'center'
+                }).setOrigin(0.5);
+            }
+        });
+    }
+
     getSuitSymbol(suit) {
         switch(suit) {
             case 'hearts': return '♥';
@@ -198,7 +285,8 @@ class GameScene extends Phaser.Scene {
         //Rule 2: Must be descending rank from the previous card
         const rankValues = {'A': 1,   '2': 2,   '3': 3,   '4': 4, 
                             '5': 5,   '6': 6,   '7': 7,   '8': 8, '9': 9, 
-                            '10': 10, 'J': 11,  'Q': 12,  'K': 13};
+                            '10': 10, 'J': 11,  'Q': 12,  'K': 13
+                            };
         const cardRank = rankValues[card.value];
         const topRank = rankValues[topCard.value];
         const isDescending = cardRank === topRank - 1;
@@ -209,5 +297,27 @@ class GameScene extends Phaser.Scene {
         const isAlternatingColor = isCardRed !== isTopRed;
 
         return isDescending && isAlternatingColor;
+    }
+
+    isValidFoundationMove(card, targetPile){
+        //Rule 1: Empty foundation pile can only have Ace
+        if (targetPile.cards.length === 0) {
+            return card.value === 'A';
+        }
+
+        const topCard = targetPile.topCard();
+
+        //Rule 2: Must be the exact same suit
+        if (card.suit !== topCard.suit) {
+            return false;
+        }
+
+        //Rule 3: Must be ascending rank
+        const rankValues = {'A': 1,   '2': 2,   '3': 3,   '4': 4, 
+                            '5': 5,   '6': 6,   '7': 7,   '8': 8, '9': 9, 
+                            '10': 10, 'J': 11,  'Q': 12,  'K': 13
+                            };
+        
+        return rankValues[card.value] === rankValues[topCard.value] + 1;
     }
 } //class
