@@ -13,7 +13,7 @@ class Deck {
             }
         }
     }
-/* Fisher-Yates Shuffle: Picks random card from unshuffled deck, moves to back of shuffled deck,*/
+/* Picks random card from unshuffled deck, moves the picked card to the back of shuffled deck*/
     shuffle() {
         for (let i = this.cards.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));

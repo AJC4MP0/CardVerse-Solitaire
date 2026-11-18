@@ -4,12 +4,16 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.spritesheet('cards', '.../images/OIUGSZ0.jpg', {
-            frameWidth: 64, 
-            frameHeight: 96 
-        });
+        /*this.load.spritesheet('cards', '.../images/OIUGSZ0.jpg', {
+          //  frameWidth: 64, 
+          //  frameHeight: 96 
+        });*/
     }
 
+    /**
+     * Initializes game objects, UI controls, deck state, input event listeners, 
+     * and renders the initial board layout.
+    */
     create() {
         const { width, height} = this.scale;
 
@@ -79,18 +83,21 @@ class GameScene extends Phaser.Scene {
         this.renderLayout(layoutStartX, startY, layoutSpacing);
 
         // ------------- DRAG HANDLER -------------
+        //Brings the dragged card container to the front
         this.input.on('dragstart', (pointer, gameObject) => {
             //Bring dragged card to very top layer so it floats above the others
             this.children.bringToTop(gameObject);
             gameObject.alpha = 0.85; // adds transparency when dragging
         });
 
+        // Smoothly updates card container position with the mouse cursor
         this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
             //Move the container smoothly with the cursor
             gameObject.x = dragX;
             gameObject.y = dragY;
         });
 
+        //Restores full opacity and snaps back if dropped outside valid zones
         this.input.on('dragend', (pointer, gameObject, dropped) => {
             gameObject.alpha = 1.0
             
@@ -142,17 +149,20 @@ class GameScene extends Phaser.Scene {
         });
     } // create 
 
+    /*
+     * Renders the 7 layout columns, drop zones, and individual card graphics/containers.
+     */
     renderLayout(startX, startY, spacing) {
         const cardWidth = 65;
         const cardHeight = 95;
         //How far a card is from the next
-        const verticalOffset = 30;
+        const verticalSpacing = 30;
 
         this.layoutPiles.forEach((pile, colIndex) => {
             const x = startX + (colIndex * spacing);
 
             //Active drop zone
-            const zoneHeight = cardHeight + (Math.max(0, pile.cards.length - 1) * verticalOffset);
+            const zoneHeight = cardHeight + (Math.max(0, pile.cards.length - 1) * verticalSpacing);
             const dropZone = this.add.zone(x, startY + (zoneHeight / 2) - (cardHeight / 2), cardWidth, zoneHeight)
                 .setRectangleDropZone(cardWidth, zoneHeight)
                 .setOrigin(0.5);
@@ -166,7 +176,7 @@ class GameScene extends Phaser.Scene {
                 .setOrigin(0.5);
 
             pile.cards.forEach((card, cardIndex) => {
-                const y = startY + (cardIndex * verticalOffset);
+                const y = startY + (cardIndex * verticalSpacing);
 
                 //empty layout slot outline
                 const cardBgColor = card.faceUp ? 0xffffff : 0xd9534f;
@@ -214,6 +224,9 @@ class GameScene extends Phaser.Scene {
 
     } // render method
 
+    /*
+    * Clears out game objects from the screen and redraws both the layout columns and top foundation piles.
+    */
     refreshBoard() {
         // Clear out existing dynamic card/slot game objects
         this.children.list
@@ -264,6 +277,9 @@ class GameScene extends Phaser.Scene {
         });
     }
 
+    /*
+    * Returns the corresponding suit symbol for a given suit string.
+    */
     getSuitSymbol(suit) {
         switch(suit) {
             case 'hearts': return '♥';
@@ -274,6 +290,9 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    /*
+    * Validates moves between layout columns (descending rank, alternating colors, Kings on empty slots).
+    */
     isValidLayoutMove(card, targetPile) {
         //Rule 1: empty column only uses King
         if (targetPile.cards.length === 0) { // three '=' means that cards.length has to be 0, same type and value  
@@ -299,6 +318,9 @@ class GameScene extends Phaser.Scene {
         return isDescending && isAlternatingColor;
     }
 
+    /*
+    * Validates moves into foundation piles (must start with Ace, match suit, and build up sequentially).
+    */
     isValidFoundationMove(card, targetPile){
         //Rule 1: Empty foundation pile can only have Ace
         if (targetPile.cards.length === 0) {
