@@ -4,10 +4,12 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        /*this.load.spritesheet('cards', '.../images/OIUGSZ0.jpg', {
-          //  frameWidth: 64, 
-          //  frameHeight: 96 
-        });*/
+        this.load.spritesheet('cards', '../images/cards.png', {
+            frameWidth: 79, 
+            frameHeight: 123,
+            margin: 0, 
+            spacing: 0
+        });
     }
 
     /**
@@ -56,6 +58,7 @@ class GameScene extends Phaser.Scene {
             this.layoutPiles.push(pile);
         }
 
+        // ------------ FOUNDATION PILES ------------
         //Create 4 foundation piles
         this.foundationPiles = [];
         const foundStartX = 405;
@@ -77,12 +80,50 @@ class GameScene extends Phaser.Scene {
             this.foundationPiles.push(pile);
         }
 
-        this.refreshBoard();
-
         //renders cards on screen
         this.renderLayout(layoutStartX, startY, layoutSpacing);
 
-        // ------------- DRAG HANDLER -------------
+        // ------------ STOCK / WASTE PILES ------------
+
+        // Initialize Stock and Waste piles
+        this.stockPile = new Pile('stock');
+        this.wastePile = new Pile('waste');
+
+        // All remaining cards into stock pile, faced down
+        while (deck.cards.length > 0) {
+            const card =  deck.dealCard();
+            this.stockPile.addCard(card);
+        }
+
+        // Stock Pile Click Interaction (Draws card or recycles waste)
+        const stockX = 180;
+        const stockY = 100;
+        const cardWidth = 65;
+        const cardHeight = 95;
+
+        const stockBg = this.add.rectangle(stockX, stockY, cardWidth, cardHeight, 0xd9534f)
+            .setStrokeStyle(1, 0x333333)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
+
+        stockBg.on('pointerdown', () => {
+            if (this.stockPile.cards.length > 0) {
+                // Draw card from stock to waste
+                const card = this.stockPile.cards.pop();
+                card.faceUp = true;
+                this.wastePile.addCard(card);
+            } else {
+                // Recycle waste pile back into stock pile
+                while (this.wastePile.cards.length > 0) {
+                    const card = this.wastePile.cards.pop();
+                    card.faceUp = false;
+                    this.stockPile.addCard(card);
+                }
+            }
+            this.refreshBoard();
+        });
+
+                // ------------- DRAG HANDLER -------------
         //Brings the dragged card container to the front
         this.input.on('dragstart', (pointer, gameObject) => {
             //Bring dragged card to very top layer so it floats above the others
@@ -147,6 +188,7 @@ class GameScene extends Phaser.Scene {
                 gameObject.y = gameObject.originalY;
             }
         });
+
     } // create 
 
     /*
@@ -178,48 +220,31 @@ class GameScene extends Phaser.Scene {
             pile.cards.forEach((card, cardIndex) => {
                 const y = startY + (cardIndex * verticalSpacing);
 
-                //empty layout slot outline
-                const cardBgColor = card.faceUp ? 0xffffff : 0xd9534f;
-                this.add.rectangle(x, y, cardWidth, cardHeight, cardBgColor)
-                    .setStrokeStyle(1, 0x000000)
-                    .setOrigin(0.5);
-
                 if(card.faceUp) {
-                // container for face up card
-                    const cardBg = this.add.rectangle(0, 0, cardWidth, cardHeight, 0xffffff)
-                        .setStrokeStyle(1, 0x333333)
+                    const frameIndex = this.getCardFrame(card);
+                    const cardSprite = this.add.sprite(0, 0, 'cards', frameIndex)
+                        .setDisplaySize(cardWidth, cardHeight)
                         .setOrigin(0.5);
                     
-                //Changes colors: If hearts or diamonds, the card will be red, vice versa
-                    const textColor = (card.suit === 'hearts' || card.suit === 'diamonds') ? '#cd4945' : '#000000';
-                    // Creates the card: Card value (upper line), suit (lower line)
-                    const cardText = this.add.text(0, 0, `${card.value}\n${this.getSuitSymbol(card.suit)}`, {
-                        fontFamily: 'Oswald, Arial, sans-serif',
-                        fontSize: '14px',
-                        fontStyle: 'bold',
-                        color: textColor,
-                        align: 'center'
-                    }).setOrigin(0.5);
-                    
-                //Card container
-                    const cardContainer = this.add.container(x, y, [cardBg, cardText])
+                    //Card container for dragging
+                    const cardContainer = this.add.container(x, y, [cardSprite])
                         .setSize(cardWidth, cardHeight)
                         .setInteractive({ useHandCursor: true});
-                    
-                // references for what card/pile the card belongs to
+
+                    // references for what card/pile the card belongs to
                     cardContainer.cardData = card;
                     cardContainer.sourcePile = pile;
                     cardContainer.originalX = x;
                     cardContainer.originalY = y;
-
+                    
                 //Phaser drag input
                     this.input.setDraggable(cardContainer);
                 } else {
-                    this.add.rectangle(x , y, cardWidth, cardHeight, 0xcd4945)
-                    .setStrokeStyle(1, 0x333333)
+                    this.add.sprite(x , y, 'cards', 55)
+                    .setDisplaySize(cardWidth, cardHeight)
                     .setOrigin(0.5);
                 }
-            });
+            }); 
         });
 
     } // render method
@@ -230,11 +255,72 @@ class GameScene extends Phaser.Scene {
     refreshBoard() {
         // Clear out existing dynamic card/slot game objects
         this.children.list
-            .filter(child => child.type === 'Container' || child.type === 'Rectangle' || child.type === 'Text' || child.type === 'Zone')
+            .filter(child => child.type === 'Container' || child.type === 'Rectangle' || child.type === 'Text' || child.type === 'Zone' || child.type === 'Sprite')
             .forEach(child => child.destroy());
 
         // Re-render layout columns and drop zones
         this.renderLayout(180, 220, 75);
+
+        // ----------- Render Stock Pile ----------- 
+        const stockX = 180;
+        const stockY = 100;
+        const cardWidth = 65;
+        const cardHeight = 95;
+
+        const stockBg = this.add.rectangle(stockX, stockY, cardWidth, cardHeight, 0xd9534f)
+            .setStrokeStyle(1, 0x333333)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
+
+        stockBg.on('pointerdown', () => {
+            if (this.stockPile.cards.length > 0) {
+                const card = this.stockPile.cards.pop();
+                card.faceUp = true;
+                this.wastePile.addCard(card);
+            } else {
+                while (this.wastePile.cards.length > 0) {
+                    const card = this.wastePile.cards.pop();
+                    card.faceUp = false;
+                    this.stockPile.addCard(card);
+                }
+            }
+            this.refreshBoard();
+        });
+
+        this.add.text(stockX, stockY, `STOCK\n(${this.stockPile.cards.length})`, {
+            fontFamily: 'Oswald, Arial, sans-serif',
+            fontSize: '12px',
+            color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5);
+
+        // ----------- Render Waste Pile ----------- 
+        const wasteX = 255;
+        const wasteY = 100;
+
+        this.add.rectangle(wasteX, wasteY, cardWidth, cardHeight)
+            .setStrokeStyle(1, 0xffffff, 0.4)
+            .setOrigin(0.5);
+
+        if (this.wastePile.cards.length > 0) {
+            const topWasteCard = this.wastePile.cards[this.wastePile.cards.length - 1];
+            const frameIndex = this.getCardFrame(topWasteCard);
+            
+            const cardSprite = this.add.sprite(0, 0, 'cards', frameIndex)
+                .setDisplaySize(cardWidth, cardHeight)
+                .setOrigin(0.5);
+            
+            const cardContainer = this.add.container(wasteX, wasteY, [cardSprite])
+                .setSize(cardWidth, cardHeight)
+                .setInteractive({ useHandCursor: true });
+            
+            cardContainer.cardData = topWasteCard;
+            cardContainer.sourcePile = this.wastePile;
+            cardContainer.originalX = wasteX;
+            cardContainer.originalY = wasteY;
+
+            this.input.setDraggable(cardContainer);
+        }
 
         // Re-render foundation piles
         const foundStartX = 405;
@@ -260,19 +346,11 @@ class GameScene extends Phaser.Scene {
             // 3. Draw top card of foundation if any exist
             if (pile.cards.length > 0) {
                 const topCard = pile.cards[pile.cards.length - 1];
+                const frameIndex = this.getCardFrame(topCard);
                 
-                this.add.rectangle(x, foundStartY, 65, 95, 0xffffff)
-                    .setStrokeStyle(1, 0x333333)
+                this.add.sprite(x, foundStartY, 'cards', frameIndex)
+                    .setDisplaySize(cardWidth, cardHeight)
                     .setOrigin(0.5);
-                
-                const textColor = (topCard.suit === 'hearts' || topCard.suit === 'diamonds') ? '#cd4945' : '#000000';
-                this.add.text(x, foundStartY, `${topCard.value}\n${this.getSuitSymbol(topCard.suit)}`, {
-                    fontFamily: 'Oswald, Arial, sans-serif',
-                    fontSize: '14px',
-                    fontStyle: 'bold',
-                    color: textColor,
-                    align: 'center'
-                }).setOrigin(0.5);
             }
         });
     }
@@ -342,4 +420,24 @@ class GameScene extends Phaser.Scene {
         
         return rankValues[card.value] === rankValues[topCard.value] + 1;
     }
+
+    getCardFrame(card) {
+    const rankMap = {
+        'A': 0, '2': 1, '3': 2, '4': 3, '5': 4,
+        '6': 5, '7': 6, '8': 7, '9': 8, '10': 9,
+        'J': 10, 'Q': 11, 'K': 12
+    };
+
+    const suitRowMap = {
+        'clubs': 0,
+        'diamonds': 1,
+        'hearts': 2,
+        'spades': 3
+    };
+
+    const row = suitRowMap[card.suit] !== undefined ? suitRowMap[card.suit] : 0;
+    const rankIndex = rankMap[card.value] !== undefined ? rankMap[card.value] : 0;
+
+    return (row * 13) + rankIndex;
+}
 } //class
