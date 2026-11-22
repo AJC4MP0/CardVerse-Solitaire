@@ -153,6 +153,7 @@ class GameScene extends Phaser.Scene {
         this.input.on('drop', (pointer, gameObject, dropZone) => {
             const draggedCard = gameObject.cardData;
             const targetPile = dropZone.pileReference;
+            const sourcePile = gameObject.sourcePile;
 
             let isValid = false;
 
@@ -161,7 +162,8 @@ class GameScene extends Phaser.Scene {
                 isValid = this.isValidFoundationMove(draggedCard, targetPile);
             } else {
                 //check layout rules (different pile, alt colors, descending rank)
-                isValid = (gameObject.sourcePile !== targetPile && this.isValidLayoutMove(draggedCard, targetPile));
+               /* isValid = (sourcePile !== targetPile && this.isValidFoundationMove(draggedCard, targetPile)); */
+                isValid = (sourcePile !== targetPile && this.isValidLayoutMove(draggedCard, targetPile));
             }
 
             if (isValid) {
@@ -244,7 +246,7 @@ class GameScene extends Phaser.Scene {
                     .setDisplaySize(cardWidth, cardHeight)
                     .setOrigin(0.5);
                 }
-            }); 
+            });
         });
 
     } // render method
@@ -353,7 +355,7 @@ class GameScene extends Phaser.Scene {
                     .setOrigin(0.5);
             }
         });
-    }
+    } // refresh
 
     /*
     * Returns the corresponding suit symbol for a given suit string.
