@@ -126,6 +126,19 @@ class GameScene extends Phaser.Scene {
                 // ------------- DRAG HANDLER -------------
         //Brings the dragged card container to the front
         this.input.on('dragstart', (pointer, gameObject) => {
+            const sourcePile = gameObject.sourcePile;
+
+            //If card is from layout, use card index, HOWEVER, if from waste/stock, it is just the top card (index 0)
+            const startIndex = (gameObject.cardIndex !== undefined) ? gameObject.cardIndex : sourcePile.cards.length - 1;
+
+            //Slice current card and all cards stacked on top of it into a sub-stack
+            //Slice: slice/extract from an array/string to bring into a new array or string, without altering the original one.
+            gameObject.draggedCards = sourcePile.cards.slice(startIndex);
+            gameObject.startIndex = startIndex;
+
+            //save reference so refresh doesn't destroy card during drag
+            this.draggedGameObject = gameObject;
+
             //Bring dragged card to very top layer so it floats above the others
             this.children.bringToTop(gameObject);
             gameObject.alpha = 0.85; // adds transparency when dragging
@@ -141,6 +154,9 @@ class GameScene extends Phaser.Scene {
         //Restores full opacity and snaps back if dropped outside valid zones
         this.input.on('dragend', (pointer, gameObject, dropped) => {
             gameObject.alpha = 1.0
+
+            //Once drag is finished, clear old container
+            this.draggedGameObject = null;
             
             //When dropped without valid drop zone, goes back to home
             if(!dropped) {
@@ -151,37 +167,51 @@ class GameScene extends Phaser.Scene {
 
         // ------------- DROP HANDLER -------------
         this.input.on('drop', (pointer, gameObject, dropZone) => {
-            const draggedCard = gameObject.cardData;
+            const draggedCards = gameObject.draggedCards;
+            const primaryCard = draggedCards[0]; // top card of sub-stack
             const targetPile = dropZone.pileReference;
             const sourcePile = gameObject.sourcePile;
 
             let isValid = false;
 
+            /* Testing to see why i cannot drop anything*/
             if (dropZone.isFoundation){
-                //check foundation rules (ascending suit)
-                isValid = this.isValidFoundationMove(draggedCard, targetPile);
+                    isValid = (draggedCards.length === 1 && this.isValidFoundationMove(primaryCard, targetPile));
+                } else {
+                    const topCard = targetPile.cards.length > 0 ? targetPile.topCard() : null;
+                    console.log("Dragging card:", primaryCard.value, primaryCard.suit);
+                    console.log("Target pile top card:", topCard ? topCard.value : "Empty");
+                    console.log("Source equals Target:", sourcePile === targetPile);
+                    
+                    isValid = (sourcePile !== targetPile && this.isValidLayoutMove(primaryCard, targetPile));
+                    console.log("Is Layout Move Valid?", isValid);
+                }
+
+            if (dropZone.isFoundation){
+                //Foundation can only take 1 card at a time
+                isValid = (draggedCards.length === 1 && this.isValidFoundationMove(primaryCard, targetPile));
             } else {
                 //check layout rules (different pile, alt colors, descending rank)
-               /* isValid = (sourcePile !== targetPile && this.isValidFoundationMove(draggedCard, targetPile)); */
-                isValid = (sourcePile !== targetPile && this.isValidLayoutMove(draggedCard, targetPile));
+                isValid = (sourcePile !== targetPile && this.isValidLayoutMove(primaryCard, targetPile));
             }
 
-            if (isValid) {
-                console.log(`Valid move: Dropped ${draggedCard.value} of ${draggedCard.suit}`);
+            if (isValid) { 
+                //Slice/remove card stack from source pile permanetly
+                sourcePile.cards.splice(gameObject.startIndex, gameObject.draggedCards.length);
+                console.log(`Valid move: Dropped ${primaryCard.value} of ${primaryCard.suit}`);
 
-                 //remove card from source pile
-                gameObject.sourcePile.removeCard(draggedCard);
+                 //add card stack to the target pile
+                draggedCards.forEach(card => targetPile.addCard(card));
                 
                 //If source was a layout pile, auto flip the new top card face-up
-                if (gameObject.sourcePile.type === 'layout' && gameObject.sourcePile.cards.length > 0) {
-                    const newTopCard = gameObject.sourcePile.cards[gameObject.sourcePile.cards.length - 1];
+                if (sourcePile.type === 'layout' && sourcePile.cards.length > 0) {
+                    const newTopCard = sourcePile.cards[sourcePile.cards.length - 1];
                     if(!newTopCard.faceUp) {
                         newTopCard.flip();
                     }
                 }
-                //add card to target pile
-                targetPile.addCard(draggedCard);
 
+                this.draggedGameObject = null;
                 //clear old visuals and re render board with updated version
                 this.refreshBoard();
             } else {
@@ -235,6 +265,7 @@ class GameScene extends Phaser.Scene {
 
                     // references for what card/pile the card belongs to
                     cardContainer.cardData = card;
+                    cardContainer.cardIndex = cardIndex;
                     cardContainer.sourcePile = pile;
                     cardContainer.originalX = x;
                     cardContainer.originalY = y;
@@ -257,7 +288,8 @@ class GameScene extends Phaser.Scene {
     refreshBoard() {
         // Clear out existing dynamic card/slot game objects
         this.children.list
-            .filter(child => child.type === 'Container' || child.type === 'Rectangle' || child.type === 'Text' || child.type === 'Zone' || child.type === 'Sprite')
+            .filter(child => (child.type === 'Container' || child.type === 'Rectangle' || child.type === 'Text' 
+                    || child.type === 'Zone' || child.type === 'Sprite') && child !== this.draggedGameObject)
             .forEach(child => child.destroy());
 
         // Re-render layout columns and drop zones
