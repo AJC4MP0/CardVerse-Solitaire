@@ -4,6 +4,7 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
+        //ADDCARDS: SPRITESHEET
         this.load.spritesheet('cards', '../images/cards.png', {
             frameWidth: 79, 
             frameHeight: 123,
@@ -20,16 +21,18 @@ class GameScene extends Phaser.Scene {
         const { width, height} = this.scale;
 
         // Top left Main Menu Button
-        const menuBtn = this.add.text(40, 30, ' ◀ Main Menu ', {
+        this.menuBtn = this.add.text(40, 30, ' ◀ Main Menu ', {
             fontFamily: 'Oswald, sans-serif',
             fontSize: '16px',
             color: '#ffffff'
-        }).setInteractive({ useHandCursor: true });
+        }).setInteractive({ useHandCursor: true })
+        .setDepth(10);
 
-        menuBtn.on('pointerover', () => menuBtn.setColor('#48cae4'));
-        menuBtn.on('pointerout', () => menuBtn.setColor('#ffffff'));
-        menuBtn.on('pointerdown', () => {
-            this.scene.start("MainMenuScene");
+        this.menuBtn.on('pointerover', () => this.menuBtn.setColor('#48cae4'));
+        this.menuBtn.on('pointerout', () => this.menuBtn.setColor('#ffffff'));
+        this.menuBtn.on('pointerdown', () => {
+            this.showVictoryScreen(); //TESTING VICTORY SCREEN
+            //this.scene.start("MainMenuScene");
         });
 
         //Initalize and shuffle deck
@@ -101,6 +104,7 @@ class GameScene extends Phaser.Scene {
         const cardWidth = 65;
         const cardHeight = 95;
 
+        //ADDCARDS: STOCK_PILE_BACKGROUND
         const stockBg = this.add.rectangle(stockX, stockY, cardWidth, cardHeight, 0xd9534f)
             .setStrokeStyle(1, 0x333333)
             .setOrigin(0.5)
@@ -154,6 +158,7 @@ class GameScene extends Phaser.Scene {
         //Restores full opacity and snaps back if dropped outside valid zones
         this.input.on('dragend', (pointer, gameObject, dropped) => {
             gameObject.alpha = 1.0
+            gameObject.setDepth(0); // resets card's layer depth when pressed
 
             //Once drag is finished, clear old container
             this.draggedGameObject = null;
@@ -214,6 +219,8 @@ class GameScene extends Phaser.Scene {
                 this.draggedGameObject = null;
                 //clear old visuals and re render board with updated version
                 this.refreshBoard();
+                //Check if the 4 piles has 13 cards each
+                this.checkWinCondition();
             } else {
                 //invalid move
                 gameObject.x = gameObject.originalX;
@@ -244,6 +251,7 @@ class GameScene extends Phaser.Scene {
             //Pile reference to the drop zone
             dropZone.pileReference = pile;
             
+            //ADDCARDS: Layout slot outline
             //Draw empty layout slot outline
             this.add.rectangle(x, startY, cardWidth, cardHeight, 0xffffff)
                 .setStrokeStyle(1, 0x333333, 0.3)
@@ -253,11 +261,13 @@ class GameScene extends Phaser.Scene {
                 const y = startY + (cardIndex * verticalSpacing);
 
                 if(card.faceUp) {
+                    //ADDCARDS: Layout Face up Sprite
                     const frameIndex = this.getCardFrame(card);
                     const cardSprite = this.add.sprite(0, 0, 'cards', frameIndex)
                         .setDisplaySize(cardWidth, cardHeight)
                         .setOrigin(0.5);
                     
+                    //ADDCARDS: Layout draggable container
                     //Card container for dragging
                     const cardContainer = this.add.container(x, y, [cardSprite])
                         .setSize(cardWidth, cardHeight)
@@ -273,6 +283,7 @@ class GameScene extends Phaser.Scene {
                 //Phaser drag input
                     this.input.setDraggable(cardContainer);
                 } else {
+                    //ADDCARDS: Layout Face down Sprite
                     this.add.sprite(x , y, 'cards', 55)
                     .setDisplaySize(cardWidth, cardHeight)
                     .setOrigin(0.5);
@@ -289,7 +300,9 @@ class GameScene extends Phaser.Scene {
         // Clear out existing dynamic card/slot game objects
         this.children.list
             .filter(child => (child.type === 'Container' || child.type === 'Rectangle' || child.type === 'Text' 
-                    || child.type === 'Zone' || child.type === 'Sprite') && child !== this.draggedGameObject)
+                    || child.type === 'Zone' || child.type === 'Sprite') 
+                    && child !== this.draggedGameObject
+                    && child !== this.menuBtn)
             .forEach(child => child.destroy());
 
         // Re-render layout columns and drop zones
@@ -301,6 +314,7 @@ class GameScene extends Phaser.Scene {
         const cardWidth = 65;
         const cardHeight = 95;
 
+        //ADDCARDS: REFRESH_STOCK_BACKGROUND
         const stockBg = this.add.rectangle(stockX, stockY, cardWidth, cardHeight, 0xd9534f)
             .setStrokeStyle(1, 0x333333)
             .setOrigin(0.5)
@@ -332,6 +346,7 @@ class GameScene extends Phaser.Scene {
         const wasteX = 255;
         const wasteY = 100;
 
+        //ADDCARDS: Refresh waste slot outline
         this.add.rectangle(wasteX, wasteY, cardWidth, cardHeight)
             .setStrokeStyle(1, 0xffffff, 0.4)
             .setOrigin(0.5);
@@ -340,10 +355,12 @@ class GameScene extends Phaser.Scene {
             const topWasteCard = this.wastePile.cards[this.wastePile.cards.length - 1];
             const frameIndex = this.getCardFrame(topWasteCard);
             
+            //ADDCARDS: Refresh waste card sprite
             const cardSprite = this.add.sprite(0, 0, 'cards', frameIndex)
                 .setDisplaySize(cardWidth, cardHeight)
                 .setOrigin(0.5);
             
+            //ADDCARDS: Refresh waste draggable container
             const cardContainer = this.add.container(wasteX, wasteY, [cardSprite])
                 .setSize(cardWidth, cardHeight)
                 .setInteractive({ useHandCursor: true });
@@ -372,11 +389,13 @@ class GameScene extends Phaser.Scene {
             dropZone.pileReference = pile;
             dropZone.isFoundation = true;
 
+            //ADDCARDS: Refresh foundation slot outline
             // 2. Draw placeholder outline for foundation slot
             this.add.rectangle(x, foundStartY, 65, 95)
                 .setStrokeStyle(1, 0xffffff, 0.4)
                 .setOrigin(0.5);
 
+             //ADDCARDS: Refresh foundation top card sprite
             // 3. Draw top card of foundation if any exist
             if (pile.cards.length > 0) {
                 const topCard = pile.cards[pile.cards.length - 1];
@@ -454,24 +473,115 @@ class GameScene extends Phaser.Scene {
         
         return rankValues[card.value] === rankValues[topCard.value] + 1;
     }
-
+    //ADDCARDS:Card Ranks and Suits
     getCardFrame(card) {
+    //Maps card ranks (Ace - King) by column
     const rankMap = {
         'A': 0, '2': 1, '3': 2, '4': 3, '5': 4,
         '6': 5, '7': 6, '8': 7, '9': 8, '10': 9,
         'J': 10, 'Q': 11, 'K': 12
     };
 
+    //Maps card suits by row
     const suitRowMap = {
         'clubs': 0,
         'diamonds': 1,
         'hearts': 2,
         'spades': 3
     };
-
+    //check if card suit is within suitRowMap, if undefined fallback to row 0
     const row = suitRowMap[card.suit] !== undefined ? suitRowMap[card.suit] : 0;
+
+    //check if card rank is within rankMap, if undefined fallback to column 0
     const rankIndex = rankMap[card.value] !== undefined ? rankMap[card.value] : 0;
 
+    //Calculates exact frame index card in grid
+    //row = Math.floor(index/13 total ranks)
     return (row * 13) + rankIndex;
-}
-} //class
+    }
+
+    /* 
+    *    Check if all four foundations piles have 13 cards (A-K)
+    */
+    checkWinCondition(){
+        const hasWon = this.foundationPiles.every(pile => pile.cards.length === 13);
+        if(hasWon) {
+            this.showVictoryScreen();
+        }
+    }
+
+    /* 
+    *   Renders victory screen
+    */
+    showVictoryScreen() {
+        const { width, height} = this.scale;
+        //background
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+            .setDepth(100)
+            .setInteractive(); // doesnt let user touch cards in the bg
+        
+        //victory popup box
+        const boxWidth = 400;
+        const boxHeight = 220;
+        const box = this.add.rectangle(width / 2, height / 2, boxWidth, boxHeight, 0x1a1a2e)
+            .setStrokeStyle(2, 0x48cae4)
+            .setOrigin(0.5)
+            .setDepth(101);
+
+        // victory title
+        const titleText = this.add.text(width / 2, (height / 2) - 55, 'VICTORY', {
+            fontFamily: 'Oswald, sans-serif',
+            fontSize: '32px',
+            fontStyle: 'bold',
+            color: '#48cae4',
+            align: 'center'
+        }).setOrigin(0.5).setDepth(102);
+
+        // sub text
+        const subText = this.add.text(width / 2, (height / 2) -15, 'ALL SLOTS FILLED!', {
+            fontFamily: 'Oswald, sans-serif',
+            fontSize: '32px',
+            color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5).setDepth(102);
+
+        // play again btn
+        const restartBtnBg = this.add.rectangle((width / 2) - 90, (height / 2) + 50, 150, 40, 0x48cae4)
+            .setInteractive({ useHandCursor: true })
+            .setOrigin(0.5)
+            .setDepth(102);
+
+        const restartBtnText = this.add.text((width / 2) - 90, (height / 2) + 50, 'Play Again', {
+                fontFamily: 'Oswald, sans-serif',
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: '#2c2c4d',
+                align: 'center'
+            }).setOrigin(0.5).setDepth(102);
+
+            restartBtnBg.on('pointerover', () => restartBtnBg.setFillStyle(0x90e0ef));
+            restartBtnBg.on('pointerout', () => restartBtnBg.setFillStyle(0x48cae4));
+            restartBtnBg.on('pointerdown', () => this.scene.restart());
+        //main menu btn
+
+        const menuBtnBg = this.add.rectangle((width / 2) + 90, (height / 2) + 50, 150, 40, 0x33334d)
+            .setStrokeStyle(1, 0x48cae4)
+            .setInteractive({ useHandCursor: true })
+            .setOrigin(0.5)
+            .setDepth(102);
+
+        const menuBtnText = this.add.text((width / 2) + 90, (height / 2) + 50, 'Main Menu', {
+                fontFamily: 'Oswald, sans-serif',
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: '#ffffff',
+                align: 'center'
+            }).setOrigin(0.5).setDepth(103);
+
+            menuBtnBg.on('pointerover', () => menuBtnBg.setFillStyle(0x444466));
+            menuBtnBg.on('pointerout', () => menuBtnBg.setFillStyle(0x33334d));
+            menuBtnBg.on('pointerdown', () => {
+            this.scene.start('MainMenuScene');
+            });
+        }
+    } //class
